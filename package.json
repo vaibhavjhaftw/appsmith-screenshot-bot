@@ -1,0 +1,8 @@
+{
+  "name": "appsmith-bot",
+  "version": "1.0.0",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "node-fetch": "^2.6.7"
+  }
+}
