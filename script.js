@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const URL = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/page1-69da1360e25e19606fe1f924';
 
-const SLACK_TOKEN = 'xoxp-1259594035652-4406942173585-10610506750276-66116d595b05c4a02f12f1b10624a248';
+const SLACK_TOKEN = process.env.SLACK_TOKEN;
 const CHANNEL = 'C09PVQ14RP0';
 
 (async () => {
