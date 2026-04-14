@@ -66,11 +66,10 @@ const APP_LINK = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/p
 const total = Number(data.Rahul) + Number(data.Supriya) + Number(data.Sree);
 
 const message = `
-Hey <!subteam^KAMS_GROUP_ID> 👋
+<!subteam^S06NQ302DDX> 🚀
 
-As of today, we’ve reached *<${APP_LINK}|${total} Profile Shortlists>* 🚀
+We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
 
-🏆 *Leaderboard*
 🥇 Rahul — ${data.Rahul}
 🥈 Supriya — ${data.Supriya}
 🥉 Sree — ${data.Sree}
