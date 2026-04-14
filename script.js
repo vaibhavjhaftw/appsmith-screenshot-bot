@@ -66,13 +66,13 @@ const APP_LINK = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/p
 const total = Number(data.Rahul) + Number(data.Supriya) + Number(data.Sree);
 
 const message = `
-<!subteam^S06NQ302DDX> 🚀
+Hey <!subteam^S06NQ302DDX>,
 
 We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
 
-🥇 Rahul — ${data.Rahul}
-🥈 Supriya — ${data.Supriya}
-🥉 Sree — ${data.Sree}
+🥇 Rahul - ${data.Rahul}
+🥈 Supriya - ${data.Supriya}
+🥉 Sree - ${data.Sree}
 `;
 
   // -------------------------------
