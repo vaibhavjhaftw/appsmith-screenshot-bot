@@ -5,7 +5,7 @@ const fs = require('fs');
 const URL = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/page1-69da1360e25e19606fe1f924';
 
 const SLACK_TOKEN = process.env.SLACK_TOKEN;
-const CHANNEL = 'C09PVQ14RP0';
+const CHANNEL = 'C025HDZGHLL'; // KAM New - C025HDZGHLL || Test Channel - C09PVQ14RP0
 
 (async () => {
 
