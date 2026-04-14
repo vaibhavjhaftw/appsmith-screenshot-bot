@@ -60,12 +60,20 @@ const CHANNEL = 'C09PVQ14RP0';
 
   console.log("✅ Extracted Data:", data);
 
-  const message = `
-📊 *Daily POD Leaderboard*
+const APP_LINK = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/page1-69da1360e25e19606fe1f924';
 
-🥇 Rahul: ${data.Rahul}
-🥈 Supriya: ${data.Supriya}
-🥉 Sree: ${data.Sree}
+// calculate total dynamically (better than hardcoding 57)
+const total = Number(data.Rahul) + Number(data.Supriya) + Number(data.Sree);
+
+const message = `
+Hey <!subteam^KAMS_GROUP_ID> 👋
+
+As of today, we’ve reached *<${APP_LINK}|${total} Profile Shortlists>* 🚀
+
+🏆 *Leaderboard*
+🥇 Rahul — ${data.Rahul}
+🥈 Supriya — ${data.Supriya}
+🥉 Sree — ${data.Sree}
 `;
 
   // -------------------------------
