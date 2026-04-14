@@ -1,0 +1,29 @@
+name: Daily Appsmith Screenshot
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # 9:30 AM IST
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install --with-deps
+
+      - name: Run script
+        run: node script.js
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
