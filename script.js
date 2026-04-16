@@ -5,7 +5,7 @@ const fs = require('fs');
 const URL = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/page1-69da1360e25e19606fe1f924';
 
 const SLACK_TOKEN = process.env.SLACK_TOKEN;
-const CHANNEL = 'C09PVQ14RP0'; // KAM New - C025HDZGHLL || Test Channel - C09PVQ14RP0
+const CHANNEL = 'C09PVQ14RP0';
 
 (async () => {
 
@@ -16,73 +16,95 @@ const CHANNEL = 'C09PVQ14RP0'; // KAM New - C025HDZGHLL || Test Channel - C09PVQ
 
   await page.goto(URL, { waitUntil: 'networkidle' });
 
-  await page.waitForSelector('text=Role Wise Distribution Table For (Select KAMs)', { timeout: 60000 });
+  // Wait for section to appear
+  await page.waitForSelector('text=KAM Leaderboard', { timeout: 60000 });
 
+  // 🔴 CRITICAL: Appsmith load buffer
   await page.waitForTimeout(60000);
 
-  await page.screenshot({
-    path: 'full.png',
-    fullPage: true
-  });
-
-  const pageWidth = await page.evaluate(() => document.body.scrollWidth);
-
+  // -------------------------------
+  // ✅ PRECISE CHART CROP
+  // -------------------------------
   const graphPath = 'graph.png';
+
+  const title = page.locator('text=Role Wise Distribution Table').first();
+  const box = await title.boundingBox();
+
+  if (!box) {
+    throw new Error("Chart title not found");
+  }
 
   await page.screenshot({
     path: graphPath,
     clip: {
-      x: pageWidth * 0.45,
-      y: 140,
-      width: pageWidth * 0.5,
-      height: 500
+      x: box.x + 250,
+      y: box.y + 100,
+      width: 650,
+      height: 420
     }
   });
 
   console.log("✅ Chart cropped");
 
+  // -------------------------------
+  // ✅ RELIABLE DATA EXTRACTION
+  // -------------------------------
   const data = await page.evaluate(() => {
     const text = document.body.innerText;
-    const match = text.match(/Rahul\s*-\s*(\d+).*?Supriya\s*-\s*(\d+).*?Sree\s*-\s*(\d+)/s);
 
-    if (match) {
-      return {
-        Rahul: match[1],
-        Supriya: match[2],
-        Sree: match[3]
-      };
+    const summaryLine = text.split('\n').find(line =>
+      line.includes('Rahul') &&
+      line.includes('Supriya') &&
+      line.includes('Sree')
+    );
+
+    if (!summaryLine) {
+      return { Rahul: '0', Supriya: '0', Sree: '0' };
     }
 
-    return { Rahul: '0', Supriya: '0', Sree: '0' };
+    const extract = (name) => {
+      const match = summaryLine.match(new RegExp(`${name}\\s*-\\s*(\\d+)`));
+      return match ? match[1] : '0';
+    };
+
+    return {
+      Rahul: extract('Rahul'),
+      Supriya: extract('Supriya'),
+      Sree: extract('Sree')
+    };
   });
 
   await browser.close();
 
   console.log("✅ Extracted Data:", data);
 
-const APP_LINK = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/page1-69da1360e25e19606fe1f924';
+  // -------------------------------
+  // ✅ MESSAGE FORMATTING
+  // -------------------------------
+  const APP_LINK = URL;
 
-// calculate total dynamically (better than hardcoding 57)
-const total = Number(data.Rahul) + Number(data.Supriya) + Number(data.Sree);
+  const total =
+    Number(data.Rahul) +
+    Number(data.Supriya) +
+    Number(data.Sree);
 
-const message = `
-// Hey <!subteam^S06NQ302DDX>,
-Hey! 
+  const message = `
+<!subteam^S06NQ302DDX> 🚀
 
 We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
 
-🥇 Rahul - ${data.Rahul}
-🥈 Supriya - ${data.Supriya}
-🥉 Sree - ${data.Sree}
+🥇 Rahul — ${data.Rahul}
+🥈 Supriya — ${data.Supriya}
+🥉 Sree — ${data.Sree}
 `;
 
   // -------------------------------
-  // ✅ SLACK UPLOAD (FIXED)
+  // ✅ SLACK FILE UPLOAD (LATEST API)
   // -------------------------------
-
   const fileBuffer = fs.readFileSync(graphPath);
   const fileSize = fileBuffer.length;
 
+  // STEP 1: Get upload URL
   const uploadParams = new URLSearchParams();
   uploadParams.append('filename', 'graph.png');
   uploadParams.append('length', fileSize.toString());
@@ -103,11 +125,13 @@ We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
     return;
   }
 
+  // STEP 2: Upload file
   await fetch(uploadData.upload_url, {
     method: 'POST',
     body: fileBuffer
   });
 
+  // STEP 3: Complete upload
   const completeParams = new URLSearchParams();
   completeParams.append('files', JSON.stringify([
     {
