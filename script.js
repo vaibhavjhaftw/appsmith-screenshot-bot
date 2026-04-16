@@ -49,14 +49,14 @@ const CHANNEL = 'C09PVQ14RP0';
     if (!box) throw new Error("Bounding box failed");
 
     await page.screenshot({
-      path: graphPath,
-      clip: {
-        x: Math.max(box.x - 20, 0),
-        y: Math.max(box.y - 30, 0),
-        width: box.width + 40,
-        height: box.height + 60
-      }
-    });
+  path: graphPath,
+  clip: {
+    x: box.x + 40,        // 👉 move right → removes left table
+    y: Math.max(box.y - 20, 0),
+    width: box.width - 80, // 👉 trims both sides slightly
+    height: box.height + 120 // 👉 extend bottom properly
+  }
+});
 
     console.log("✅ Chart cropped via canvas");
     cropped = true;
