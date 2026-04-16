@@ -79,7 +79,7 @@ const CHANNEL = 'C09PVQ14RP0';
   console.log("✅ Extracted Data:", data);
 
   // -------------------------------
-  // ✅ MESSAGE FORMATTING
+  // ✅ MESSAGE FORMATTING  KAMs = <!subteam^S06NQ302DDX>
   // -------------------------------
   const APP_LINK = URL;
 
@@ -89,7 +89,7 @@ const CHANNEL = 'C09PVQ14RP0';
     Number(data.Sree);
 
   const message = `
-<!subteam^S06NQ302DDX> 🚀
+Hey! 🚀
 
 We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
 
