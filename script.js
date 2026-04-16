@@ -18,64 +18,69 @@ const CHANNEL = 'C09PVQ14RP0';
 
   await page.waitForSelector('text=KAM Leaderboard', { timeout: 60000 });
 
-  // 🔴 Appsmith buffer (KEEP THIS)
+  // 🔴 Appsmith load buffer (required)
   await page.waitForTimeout(60000);
 
   const graphPath = 'graph.png';
 
-  let cropped = false;
-
+  // -------------------------------
+  // ✅ ROBUST CHART DETECTION + CROP
+  // -------------------------------
   try {
-    // ✅ Wait for canvas (NOT forcing visible)
+
     await page.waitForSelector('canvas', { state: 'attached', timeout: 40000 });
 
-    const canvases = page.locator('canvas');
-    const count = await canvases.count();
-
-    if (count === 0) throw new Error("No canvas found");
-
-    const canvas = canvases.last();
-
-    // Scroll into view (important)
+    const canvas = page.locator('canvas').last();
     await canvas.scrollIntoViewIfNeeded();
-
-    // Wait small render buffer
     await page.waitForTimeout(3000);
 
-    // Parent container
-    const container = canvas.locator('xpath=ancestor::div[1]');
-    const box = await container.boundingBox();
+    let box = null;
 
-    if (!box) throw new Error("Bounding box failed");
+    // 🔥 Try 1: Correct Appsmith widget container
+    const widgetContainer = canvas.locator('xpath=ancestor::div[contains(@class,"t--widget-chart")]');
+    if (await widgetContainer.count() > 0) {
+      box = await widgetContainer.first().boundingBox();
+    }
 
-    await page.screenshot({
-  path: graphPath,
-  clip: {
-    x: box.x + 40,        // 👉 move right → removes left table
-    y: Math.max(box.y - 20, 0),
-    width: box.width - 80, // 👉 trims both sides slightly
-    height: box.height + 120 // 👉 extend bottom properly
-  }
-});
+    // 🔥 Try 2: Fallback higher container
+    if (!box) {
+      const fallback = canvas.locator('xpath=ancestor::div[3]');
+      box = await fallback.boundingBox();
+    }
 
-    console.log("✅ Chart cropped via canvas");
-    cropped = true;
+    // 🔥 Try 3: Absolute fallback (never fail)
+    if (!box) {
+      const pageWidth = await page.evaluate(() => document.body.scrollWidth);
+
+      await page.screenshot({
+        path: graphPath,
+        clip: {
+          x: pageWidth * 0.42,
+          y: 200,
+          width: pageWidth * 0.5,
+          height: 450
+        }
+      });
+
+      console.log("⚠️ Used absolute fallback crop");
+    } else {
+
+      // ✅ FINAL PERFECT RELATIVE CROP
+      await page.screenshot({
+        path: graphPath,
+        clip: {
+          x: box.x + box.width * 0.12,     // remove left table
+          y: box.y + box.height * 0.08,    // remove top padding
+          width: box.width * 0.76,         // trim both sides
+          height: box.height * 0.88        // include full bars + labels
+        }
+      });
+
+      console.log("✅ Perfect chart cropped");
+    }
 
   } catch (err) {
-    console.log("⚠️ Canvas method failed → fallback crop");
-
-    // ✅ Fallback (your earlier approach but improved)
-    const pageWidth = await page.evaluate(() => document.body.scrollWidth);
-
-    await page.screenshot({
-      path: graphPath,
-      clip: {
-        x: pageWidth * 0.42,
-        y: 180,
-        width: pageWidth * 0.48,
-        height: 420
-      }
-    });
+    console.log("❌ Crop failed completely:", err);
   }
 
   // -------------------------------
