@@ -18,73 +18,39 @@ const CHANNEL = 'C09PVQ14RP0';
 
   await page.waitForSelector('text=KAM Leaderboard', { timeout: 60000 });
 
-  // 🔴 Appsmith load buffer (required)
+  // 🔴 Keep this (Appsmith needs it)
   await page.waitForTimeout(60000);
 
+  // -------------------------------
+  // ✅ FULL SCREENSHOT (SOURCE)
+  // -------------------------------
+  const fullPath = 'full.png';
   const graphPath = 'graph.png';
 
-  // -------------------------------
-  // ✅ ROBUST CHART DETECTION + CROP
-  // -------------------------------
-  try {
-
-    await page.waitForSelector('canvas', { state: 'attached', timeout: 40000 });
-
-    const canvas = page.locator('canvas').last();
-    await canvas.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(3000);
-
-    let box = null;
-
-    // 🔥 Try 1: Correct Appsmith widget container
-    const widgetContainer = canvas.locator('xpath=ancestor::div[contains(@class,"t--widget-chart")]');
-    if (await widgetContainer.count() > 0) {
-      box = await widgetContainer.first().boundingBox();
-    }
-
-    // 🔥 Try 2: Fallback higher container
-    if (!box) {
-      const fallback = canvas.locator('xpath=ancestor::div[3]');
-      box = await fallback.boundingBox();
-    }
-
-    // 🔥 Try 3: Absolute fallback (never fail)
-    if (!box) {
-      const pageWidth = await page.evaluate(() => document.body.scrollWidth);
-
-      await page.screenshot({
-        path: graphPath,
-        clip: {
-          x: pageWidth * 0.42,
-          y: 200,
-          width: pageWidth * 0.5,
-          height: 450
-        }
-      });
-
-      console.log("⚠️ Used absolute fallback crop");
-    } else {
-
-      // ✅ FINAL PERFECT RELATIVE CROP
-      await page.screenshot({
-        path: graphPath,
-        clip: {
-          x: box.x + box.width * 0.12,     // remove left table
-          y: box.y + box.height * 0.08,    // remove top padding
-          width: box.width * 0.76,         // trim both sides
-          height: box.height * 0.88        // include full bars + labels
-        }
-      });
-
-      console.log("✅ Perfect chart cropped");
-    }
-
-  } catch (err) {
-    console.log("❌ Crop failed completely:", err);
-  }
+  await page.screenshot({
+    path: fullPath,
+    fullPage: true
+  });
 
   // -------------------------------
-  // ✅ RELIABLE DATA EXTRACTION
+  // ✅ PERFECT STATIC CROP (STABLE)
+  // -------------------------------
+  const pageWidth = await page.evaluate(() => document.body.scrollWidth);
+
+  await page.screenshot({
+    path: graphPath,
+    clip: {
+      x: pageWidth * 0.48,   // shift right → removes table
+      y: 220,                // skip header + sliders
+      width: pageWidth * 0.42,
+      height: 420            // enough for full bars + labels
+    }
+  });
+
+  console.log("✅ Graph cropped (stable)");
+
+  // -------------------------------
+  // ✅ DATA EXTRACTION (WORKING)
   // -------------------------------
   const data = await page.evaluate(() => {
     const text = document.body.innerText;
