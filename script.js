@@ -23,29 +23,40 @@ const CHANNEL = 'C09PVQ14RP0';
   await page.waitForTimeout(60000);
 
   // -------------------------------
-  // ✅ PRECISE CHART CROP
-  // -------------------------------
-  const graphPath = 'graph.png';
+// ✅ TRUE CHART DETECTION (NO GUESSWORK)
+// -------------------------------
+const graphPath = 'graph.png';
 
-  const title = page.locator('text=Role Wise Distribution Table').first();
-  const box = await title.boundingBox();
+// Wait for chart to render
+await page.waitForSelector('canvas', { timeout: 60000 });
 
-  if (!box) {
-    throw new Error("Chart title not found");
+// Get the chart canvas
+const canvas = page.locator('canvas').last();
+
+// Get its parent container (important)
+const container = canvas.locator('xpath=ancestor::div[1]');
+
+// Get bounding box of container
+const box = await container.boundingBox();
+
+if (!box) {
+  throw new Error("Chart container not found");
+}
+
+// Slight padding tuning (this is minimal + stable)
+await page.screenshot({
+  path: graphPath,
+  clip: {
+    x: box.x - 20,
+    y: box.y - 40,
+    width: box.width + 40,
+    height: box.height + 60
   }
+});
 
-  await page.screenshot({
-    path: graphPath,
-    clip: {
-      x: box.x + 250,
-      y: box.y + 100,
-      width: 650,
-      height: 420
-    }
-  });
+console.log("✅ Chart cropped perfectly");
 
-  console.log("✅ Chart cropped");
-
+  
   // -------------------------------
   // ✅ RELIABLE DATA EXTRACTION
   // -------------------------------
