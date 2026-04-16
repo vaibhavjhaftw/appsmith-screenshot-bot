@@ -16,47 +16,68 @@ const CHANNEL = 'C09PVQ14RP0';
 
   await page.goto(URL, { waitUntil: 'networkidle' });
 
-  // Wait for section to appear
   await page.waitForSelector('text=KAM Leaderboard', { timeout: 60000 });
 
-  // 🔴 CRITICAL: Appsmith load buffer
+  // 🔴 Appsmith buffer (KEEP THIS)
   await page.waitForTimeout(60000);
 
-  // -------------------------------
-// ✅ TRUE CHART DETECTION (NO GUESSWORK)
-// -------------------------------
-const graphPath = 'graph.png';
+  const graphPath = 'graph.png';
 
-// Wait for chart to render
-await page.waitForSelector('canvas', { timeout: 60000 });
+  let cropped = false;
 
-// Get the chart canvas
-const canvas = page.locator('canvas').last();
+  try {
+    // ✅ Wait for canvas (NOT forcing visible)
+    await page.waitForSelector('canvas', { state: 'attached', timeout: 40000 });
 
-// Get its parent container (important)
-const container = canvas.locator('xpath=ancestor::div[1]');
+    const canvases = page.locator('canvas');
+    const count = await canvases.count();
 
-// Get bounding box of container
-const box = await container.boundingBox();
+    if (count === 0) throw new Error("No canvas found");
 
-if (!box) {
-  throw new Error("Chart container not found");
-}
+    const canvas = canvases.last();
 
-// Slight padding tuning (this is minimal + stable)
-await page.screenshot({
-  path: graphPath,
-  clip: {
-    x: box.x - 20,
-    y: box.y - 40,
-    width: box.width + 40,
-    height: box.height + 60
+    // Scroll into view (important)
+    await canvas.scrollIntoViewIfNeeded();
+
+    // Wait small render buffer
+    await page.waitForTimeout(3000);
+
+    // Parent container
+    const container = canvas.locator('xpath=ancestor::div[1]');
+    const box = await container.boundingBox();
+
+    if (!box) throw new Error("Bounding box failed");
+
+    await page.screenshot({
+      path: graphPath,
+      clip: {
+        x: Math.max(box.x - 20, 0),
+        y: Math.max(box.y - 30, 0),
+        width: box.width + 40,
+        height: box.height + 60
+      }
+    });
+
+    console.log("✅ Chart cropped via canvas");
+    cropped = true;
+
+  } catch (err) {
+    console.log("⚠️ Canvas method failed → fallback crop");
+
+    // ✅ Fallback (your earlier approach but improved)
+    const pageWidth = await page.evaluate(() => document.body.scrollWidth);
+
+    await page.screenshot({
+      path: graphPath,
+      clip: {
+        x: pageWidth * 0.42,
+        y: 180,
+        width: pageWidth * 0.48,
+        height: 420
+      }
+    });
   }
-});
 
-console.log("✅ Chart cropped perfectly");
-
-  
   // -------------------------------
   // ✅ RELIABLE DATA EXTRACTION
   // -------------------------------
@@ -90,10 +111,8 @@ console.log("✅ Chart cropped perfectly");
   console.log("✅ Extracted Data:", data);
 
   // -------------------------------
-  // ✅ MESSAGE FORMATTING  KAMs = <!subteam^S06NQ302DDX>
+  // ✅ MESSAGE
   // -------------------------------
-  const APP_LINK = URL;
-
   const total =
     Number(data.Rahul) +
     Number(data.Supriya) +
@@ -102,7 +121,7 @@ console.log("✅ Chart cropped perfectly");
   const message = `
 Hey! 🚀
 
-We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
+We’re at *<${URL}|${total} Profile Shortlists>* today.
 
 🥇 Rahul — ${data.Rahul}
 🥈 Supriya — ${data.Supriya}
@@ -110,12 +129,11 @@ We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
 `;
 
   // -------------------------------
-  // ✅ SLACK FILE UPLOAD (LATEST API)
+  // ✅ SLACK UPLOAD
   // -------------------------------
   const fileBuffer = fs.readFileSync(graphPath);
   const fileSize = fileBuffer.length;
 
-  // STEP 1: Get upload URL
   const uploadParams = new URLSearchParams();
   uploadParams.append('filename', 'graph.png');
   uploadParams.append('length', fileSize.toString());
@@ -136,13 +154,11 @@ We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
     return;
   }
 
-  // STEP 2: Upload file
   await fetch(uploadData.upload_url, {
     method: 'POST',
     body: fileBuffer
   });
 
-  // STEP 3: Complete upload
   const completeParams = new URLSearchParams();
   completeParams.append('files', JSON.stringify([
     {
