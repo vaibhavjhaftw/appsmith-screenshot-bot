@@ -5,7 +5,7 @@ const fs = require('fs');
 const URL = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/page1-69da1360e25e19606fe1f924';
 
 const SLACK_TOKEN = process.env.SLACK_TOKEN;
-const CHANNEL = 'C025HDZGHLL'; // KAM New - C025HDZGHLL || Test Channel - C09PVQ14RP0
+const CHANNEL = 'C09PVQ14RP0'; // KAM New - C025HDZGHLL || Test Channel - C09PVQ14RP0
 
 (async () => {
 
@@ -18,7 +18,7 @@ const CHANNEL = 'C025HDZGHLL'; // KAM New - C025HDZGHLL || Test Channel - C09PVQ
 
   await page.waitForSelector('text=Role Wise Distribution Table For (Select KAMs)', { timeout: 60000 });
 
-  await page.waitForTimeout(40000);
+  await page.waitForTimeout(60000);
 
   await page.screenshot({
     path: 'full.png',
@@ -66,7 +66,8 @@ const APP_LINK = 'https://app.appsmith.com/app/interview-leaderboard-all-graph/p
 const total = Number(data.Rahul) + Number(data.Supriya) + Number(data.Sree);
 
 const message = `
-Hey <!subteam^S06NQ302DDX>,
+// Hey <!subteam^S06NQ302DDX>,
+Hey! 
 
 We’re at *<${APP_LINK}|${total} Profile Shortlists>* today.
 
