@@ -61,28 +61,39 @@ const CHANNEL = 'C09PVQ14RP0';
   console.log("✅ Data:", data);
 
   // -------------------------------
-  // 🧠 SORT PODS (IMPORTANT FIX)
-  // -------------------------------
-  const pods = Object.entries(data)
-    .sort((a, b) => b[1] - a[1]);
+// 🧠 SORT + FORMAT
+// -------------------------------
+const pods = Object.entries(data)
+  .sort((a, b) => b[1] - a[1]);
 
-  const total = pods.reduce((sum, [, val]) => sum + val, 0);
+const total = pods.reduce((sum, [, val]) => sum + Number(val), 0);
 
-  // -------------------------------
-  // ✍️ CLEAN ANNOUNCEMENT MESSAGE
-  // -------------------------------
-  const lines = pods
-    .map(([name, val], i) => `${i + 1}. ${name} — ${val}`)
-    .join('\n');
+// medal emojis
+const medals = [
+  ':first_place_medal:',
+  ':second_place_medal:',
+  ':third_place_medal:'
+];
 
-  const message = `
-Daily POD Update (11:30 AM)
+const rankedLines = pods
+  .map(([name, val], i) => {
+    const medal = medals[i] || '•';
+    return `${medal} ${name} — ${val}`;
+  })
+  .join('\n');
 
-Total Shortlists: <${URL}|${total}>
+// -------------------------------
+// ✍️ FINAL MESSAGE
+// -------------------------------
+const message = `
+Hey!
 
-${lines}
+We’re at *<${URL}|${total} Profile Shortlists>* today.
+
+${rankedLines}
 `.trim();
 
+  
   // -------------------------------
   // 📤 SLACK UPLOAD
   // -------------------------------
