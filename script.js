@@ -8,66 +8,45 @@ const SLACK_TOKEN = process.env.SLACK_TOKEN;
 const CHANNEL = 'C09PVQ14RP0';
 
 (async () => {
-
   const browser = await chromium.launch();
   const page = await browser.newPage({
     viewport: { width: 1920, height: 2000 }
   });
 
   await page.goto(URL, { waitUntil: 'networkidle' });
-
   await page.waitForSelector('text=KAM Leaderboard', { timeout: 60000 });
 
-  // 🔴 Keep this (Appsmith needs it)
+  // Appsmith buffer
   await page.waitForTimeout(60000);
 
   // -------------------------------
-  // ✅ FULL SCREENSHOT (SOURCE)
+  // 📸 SCREENSHOT
   // -------------------------------
-  const fullPath = 'full.png';
   const graphPath = 'graph.png';
 
-  await page.screenshot({
-    path: fullPath,
-    fullPage: true
-  });
-
-  // -------------------------------
-  // ✅ PERFECT STATIC CROP (STABLE)
-  // -------------------------------
   const pageWidth = await page.evaluate(() => document.body.scrollWidth);
 
   await page.screenshot({
     path: graphPath,
     clip: {
-      x: pageWidth * 0.48,   // shift right → removes table
-      y: 220,                // skip header + sliders
+      x: pageWidth * 0.48,
+      y: 220,
       width: pageWidth * 0.42,
-      height: 420            // enough for full bars + labels
+      height: 420
     }
   });
 
-  console.log("✅ Graph cropped (stable)");
+  console.log("✅ Graph captured");
 
   // -------------------------------
-  // ✅ DATA EXTRACTION (WORKING)
+  // 📊 ROBUST DATA EXTRACTION
   // -------------------------------
   const data = await page.evaluate(() => {
     const text = document.body.innerText;
 
-    const summaryLine = text.split('\n').find(line =>
-      line.includes('Rahul') &&
-      line.includes('Supriya') &&
-      line.includes('Sree')
-    );
-
-    if (!summaryLine) {
-      return { Rahul: '0', Supriya: '0', Sree: '0' };
-    }
-
     const extract = (name) => {
-      const match = summaryLine.match(new RegExp(`${name}\\s*-\\s*(\\d+)`));
-      return match ? match[1] : '0';
+      const match = text.match(new RegExp(`${name}\\s*-\\s*(\\d+)`));
+      return match ? Number(match[1]) : 0;
     };
 
     return {
@@ -79,28 +58,33 @@ const CHANNEL = 'C09PVQ14RP0';
 
   await browser.close();
 
-  console.log("✅ Extracted Data:", data);
+  console.log("✅ Data:", data);
 
   // -------------------------------
-  // ✅ MESSAGE
+  // 🧠 SORT PODS (IMPORTANT FIX)
   // -------------------------------
-  const total =
-    Number(data.Rahul) +
-    Number(data.Supriya) +
-    Number(data.Sree);
+  const pods = Object.entries(data)
+    .sort((a, b) => b[1] - a[1]);
+
+  const total = pods.reduce((sum, [, val]) => sum + val, 0);
+
+  // -------------------------------
+  // ✍️ CLEAN ANNOUNCEMENT MESSAGE
+  // -------------------------------
+  const lines = pods
+    .map(([name, val], i) => `${i + 1}. ${name} — ${val}`)
+    .join('\n');
 
   const message = `
-Hey! 🚀
+Daily POD Update (11:30 AM)
 
-We’re at *<${URL}|${total} Profile Shortlists>* today.
+Total Shortlists: <${URL}|${total}>
 
-🥇 Rahul — ${data.Rahul}
-🥈 Supriya — ${data.Supriya}
-🥉 Sree — ${data.Sree}
-`;
+${lines}
+`.trim();
 
   // -------------------------------
-  // ✅ SLACK UPLOAD
+  // 📤 SLACK UPLOAD
   // -------------------------------
   const fileBuffer = fs.readFileSync(graphPath);
   const fileSize = fileBuffer.length;
@@ -121,7 +105,7 @@ We’re at *<${URL}|${total} Profile Shortlists>* today.
   const uploadData = await uploadRes.json();
 
   if (!uploadData.ok) {
-    console.log("❌ Slack upload URL error:", uploadData);
+    console.log("❌ Upload URL error:", uploadData);
     return;
   }
 
@@ -152,9 +136,9 @@ We’re at *<${URL}|${total} Profile Shortlists>* today.
   const completeData = await completeRes.json();
 
   if (completeData.ok) {
-    console.log("✅ Sent to Slack successfully");
+    console.log("✅ Slack message sent");
   } else {
-    console.log("❌ Slack complete upload error:", completeData);
+    console.log("❌ Slack error:", completeData);
   }
 
 })();
