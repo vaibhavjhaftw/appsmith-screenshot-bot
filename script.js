@@ -29,10 +29,10 @@ const CHANNEL = 'C09PVQ14RP0';
   await page.screenshot({
     path: graphPath,
     clip: {
-      x: pageWidth * 0.48,
-      y: 220,
-      width: pageWidth * 0.42,
-      height: 420
+      x: pageWidth * 0.50,
+      y: 180,
+      width: pageWidth * 0.38,
+      height: 450
     }
   });
 
@@ -43,29 +43,43 @@ const CHANNEL = 'C09PVQ14RP0';
   // -------------------------------
   const data = await page.evaluate(() => {
     const results = {};
+    const text = document.body.innerText;
 
-    // Find all table rows and extract KAM name + Shortlists value
-    const rows = document.querySelectorAll('tr');
-    rows.forEach(row => {
-      const cells = row.querySelectorAll('td');
-      if (cells.length >= 3) {
-        // Column structure: Rank, KAM, Shortlists, In, Act, % Roles
-        const kamName = cells[1]?.innerText?.trim();
-        const shortlists = parseInt(cells[2]?.innerText?.trim(), 10);
-        if (kamName && !isNaN(shortlists) && shortlists > 0) {
-          results[kamName] = shortlists;
+    // Known KAM names to look for in the page text
+    const kamNames = ['Supriya', 'Kritika', 'Priya', 'Pranav', 'Aditi', 'Raghav', 'Tanvi', 'Rahul', 'Sujith', 'Vinit', 'Sree'];
+
+    // Parse table-like structure from innerText
+    // The table rows appear as: "1\tSupriya\t51\t7\t28\t25.00%"
+    const lines = text.split('\n');
+    for (const line of lines) {
+      // Match lines that look like table rows: number, name, shortlists...
+      const parts = line.split(/\t+/);
+      if (parts.length >= 3) {
+        const rank = parseInt(parts[0], 10);
+        const name = parts[1]?.trim();
+        const shortlists = parseInt(parts[2], 10);
+        if (rank >= 1 && rank <= 20 && name && kamNames.includes(name) && !isNaN(shortlists)) {
+          results[name] = shortlists;
         }
       }
-    });
+    }
 
-    // Fallback: also try extracting from the header text pattern (e.g., "Raghav - 97")
-    const text = document.body.innerText;
+    // Fallback: extract from graph labels like "Kritika (51)" or "Tanvi (20)"
+    const graphMatches = text.matchAll(/([A-Za-z]+)\s*\((\d+)\)/g);
+    for (const match of graphMatches) {
+      const name = match[1];
+      const value = parseInt(match[2], 10);
+      if (kamNames.includes(name) && !results[name] && value > 0) {
+        results[name] = value;
+      }
+    }
+
+    // Also try header pattern "Raghav - 97" as final fallback
     const headerMatches = text.matchAll(/([A-Za-z]+)\s*-\s*(\d+)/g);
     for (const match of headerMatches) {
       const name = match[1];
       const value = parseInt(match[2], 10);
-      // Only add if not already in results and value is reasonable
-      if (!results[name] && value > 0 && value < 500) {
+      if (kamNames.includes(name) && !results[name] && value > 0) {
         results[name] = value;
       }
     }
