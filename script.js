@@ -39,21 +39,38 @@ const CHANNEL = 'C09PVQ14RP0';
   console.log("✅ Graph captured");
 
   // -------------------------------
-  // 📊 ROBUST DATA EXTRACTION
+  // 📊 ROBUST DATA EXTRACTION (All PODs from table)
   // -------------------------------
   const data = await page.evaluate(() => {
+    const results = {};
+
+    // Find all table rows and extract KAM name + Shortlists value
+    const rows = document.querySelectorAll('tr');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length >= 3) {
+        // Column structure: Rank, KAM, Shortlists, In, Act, % Roles
+        const kamName = cells[1]?.innerText?.trim();
+        const shortlists = parseInt(cells[2]?.innerText?.trim(), 10);
+        if (kamName && !isNaN(shortlists) && shortlists > 0) {
+          results[kamName] = shortlists;
+        }
+      }
+    });
+
+    // Fallback: also try extracting from the header text pattern (e.g., "Raghav - 97")
     const text = document.body.innerText;
+    const headerMatches = text.matchAll(/([A-Za-z]+)\s*-\s*(\d+)/g);
+    for (const match of headerMatches) {
+      const name = match[1];
+      const value = parseInt(match[2], 10);
+      // Only add if not already in results and value is reasonable
+      if (!results[name] && value > 0 && value < 500) {
+        results[name] = value;
+      }
+    }
 
-    const extract = (name) => {
-      const match = text.match(new RegExp(`${name}\\s*-\\s*(\\d+)`));
-      return match ? Number(match[1]) : 0;
-    };
-
-    return {
-      Rahul: extract('Rahul'),
-      Supriya: extract('Supriya'),
-      Sree: extract('Sree')
-    };
+    return results;
   });
 
   await browser.close();
@@ -61,14 +78,14 @@ const CHANNEL = 'C09PVQ14RP0';
   console.log("✅ Data:", data);
 
   // -------------------------------
-// 🧠 SORT + FORMAT
+// 🧠 SORT + FORMAT (All PODs)
 // -------------------------------
 const pods = Object.entries(data)
   .sort((a, b) => b[1] - a[1]);
 
 const total = pods.reduce((sum, [, val]) => sum + Number(val), 0);
 
-// medal emojis
+// medal emojis for top 3
 const medals = [
   ':first_place_medal:',
   ':second_place_medal:',
@@ -77,8 +94,10 @@ const medals = [
 
 const rankedLines = pods
   .map(([name, val], i) => {
-    const medal = medals[i] || '•';
-    return `${medal} ${name} — ${val}`;
+    if (i < 3) {
+      return `${medals[i]} *${name}* — ${val}`;
+    }
+    return `    ${i + 1}. ${name} — ${val}`;
   })
   .join('\n');
 
